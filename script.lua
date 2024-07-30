@@ -9,6 +9,7 @@ local rooms = workspace:WaitForChild("Rooms")
 local monstersfolder = workspace:WaitForChild("Monsters")
 local itemsfolder = game.ReplicatedStorage:WaitForChild("Items")
 local shopitemsfolder = game.ReplicatedStorage:WaitForChild("DropItems")
+local charactersfolder = workspace:WaitForChild("Characters")
 
 local fixminigame = plr:WaitForChild("PlayerGui"):WaitForChild("Main"):WaitForChild("FixMinigame")
 local fixgamemiddleframe = fixminigame:WaitForChild("Background"):WaitForChild("Frame"):WaitForChild("Middle")
@@ -40,6 +41,7 @@ local espgroups = {
     generators = {},
     walldwellers = {},
     squiddles = {},
+    players = {},
 }
 
 local removedhazards = {}
@@ -69,9 +71,10 @@ function clearespgroup(name)
     end
 end
 
-function newesp(tbl,color,text,group,offset,overridesize)
+function newesp(tbl,color,text,group,offset,overridesize,maxdistance)
     task.wait()
     offset = offset or Vector3.new(0,0,0)
+    maxdistance = maxdistance or math.huge
     for i,v in pairs(tbl) do
         if not v:IsDescendantOf(workspace) then
             local tries = 0
@@ -88,6 +91,7 @@ function newesp(tbl,color,text,group,offset,overridesize)
         billboard.Size = UDim2.new(0,500,0,25)
         billboard.AlwaysOnTop = true
         billboard.StudsOffsetWorldSpace = offset
+        billboard.Name = "esp_".. group.."_".. text..#espgroups[group]
 
         local dotframe = Instance.new("Frame",billboard)
         dotframe.BackgroundColor3 = color
@@ -110,6 +114,7 @@ function newesp(tbl,color,text,group,offset,overridesize)
         infoframe.TextXAlignment = "Left"
         infoframe.TextColor3 = color
         infoframe.FontFace = Font.new("rbxasset://fonts/families/SourceSansPro.json",Enum.FontWeight.Heavy)
+        infoframe.Name = "TEXT"
 
         local infoframestroke = Instance.new("UIStroke",infoframe)
         infoframestroke.Thickness = 2
@@ -120,6 +125,7 @@ function newesp(tbl,color,text,group,offset,overridesize)
         box.AlwaysOnTop = true
         box.Transparency = 0.5
         box.CFrame = CFrame.new(offset)
+        box.Name = "BOX"
 
         local partorigin = nil
         if v:IsA("Model") then
@@ -152,6 +158,7 @@ function newesp(tbl,color,text,group,offset,overridesize)
 
         task.spawn(function()
             while billboard:IsDescendantOf(game.CoreGui) do
+                local distfromchar = math.floor((camera.CFrame.Position-partorigin).Magnitude)
                 if v:IsA("Model") then
                     local cf,size = v:GetBoundingBox()
                     partorigin = cf.Position
@@ -159,7 +166,11 @@ function newesp(tbl,color,text,group,offset,overridesize)
                     partorigin = v.Position
                 end
 
-                infoframe.Text = text .." (".. math.floor((camera.CFrame.Position-partorigin).Magnitude)..")"
+                infoframe.Text = text .." (".. distfromchar..")"
+
+                billboard.Enabled = distfromchar <= maxdistance
+                box.Visible = distfromchar <= maxdistance
+
                 task.wait()
             end
         end)
@@ -324,7 +335,7 @@ function startdooresp()
                     end
                 elseif v.Name == "Trickster" then
                     if v.Parent.Name == "Interactables" then
-                        newesp({v:WaitForChild("TricksterDoor"):WaitForChild("Door")},Color3.fromRGB(255,25,40),"Fake Door","doors")
+                        newesp({v:WaitForChild("TricksterDoor"):WaitForChild("Door")},Color3.fromRGB(255,25,40),"Fake Door","doors",nil,nil,300)
                     end
                 elseif v.Name == "BigDoor" then
                     local openvalue = v:FindFirstChild("OpenValue")
@@ -352,6 +363,18 @@ function startlockeresp()
                 elseif v.Name == "MonsterLocker" then
                     newesp({v:WaitForChild("LockerCollision")},Color3.fromRGB(255,0,0),"Void Locker","lockers")
                 end
+            end
+        end
+    end
+end
+
+function startplayeresp()
+    for _,character in pairs(charactersfolder:GetChildren()) do
+        if character ~= char then
+            local human = character:FindFirstChildOfClass("Humanoid")
+
+            if human then
+                local espbillboard = newesp({character},Color3.fromRGB(255,50,190),character.Name,"players")
             end
         end
     end
@@ -451,7 +474,8 @@ function startremovesearchlights()
 
                 if eyesfolder then
                     table.insert(removedsearchlightseyes,{what=eyesfolder,ogparent=eyesfolder.Parent})
-                    eyesfolder.Parent = nil
+                    --eyesfolder.Parent = nil
+                    eyesfolder:Destroy()
                 end
             end
         end
@@ -644,6 +668,13 @@ local tab_esp_toggle_generators = tab_esp.newtoggle({title="generator esp",oncli
         clearespgroup("generators")
     end
 end})
+local tab_esp_toggle_players = tab_esp.newtoggle({title="player esp",onclick=function(bool)
+    if bool then
+        startplayeresp()
+    else
+        clearespgroup("players")
+    end
+end})
 local tab_esp_toggle_lockers = tab_esp.newtoggle({title="locker esp",onclick=function(bool)
     if bool then
         startlockeresp()
@@ -793,7 +824,7 @@ rooms.ChildAdded:Connect(function(room)
                 end
             elseif v.Name == "Trickster" then
                 if tab_esp_toggle_doors.getvalue() and v.Parent.Name == "Interactables" then
-                    newesp({v:WaitForChild("TricksterDoor"):WaitForChild("Door")},Color3.fromRGB(255,25,40),"Fake Door","doors")
+                    newesp({v:WaitForChild("TricksterDoor"):WaitForChild("Door")},Color3.fromRGB(255,25,40),"Fake Door","doors",nil,nil,300)
                 end
             elseif v.Name == "BigDoor" then
                 if tab_esp_toggle_doors.getvalue() and v.Parent.Name == "Entrances" then
@@ -855,8 +886,9 @@ rooms.ChildAdded:Connect(function(room)
                     
                     if eyesfolder then
                         task.wait(1)
-                        table.insert(removedsquiddleroots,{what=eyesfolder,ogparent=eyesfolder.Parent})
-                        eyesfolder.Parent = nil
+                        table.insert(removedsearchlightseyes,{what=eyesfolder,ogparent=eyesfolder.Parent})
+                        --eyesfolder.Parent = nil
+                        eyesfolder:Destroy()
                     end
                 end
             end
@@ -1015,6 +1047,16 @@ monstersfolder.ChildAdded:Connect(function(v)
 
         if tab_esp_toggle_dwellers.getvalue() then
             newesp({v},Color3.fromRGB(255,50,50),"WallDweller","walldwellers")
+        end
+    end
+end)
+
+charactersfolder.ChildAdded:Connect(function(character)
+    if tab_esp_toggle_players.getvalue() and character ~= char then
+        local human = character:FindFirstChildOfClass("Humanoid")
+
+        if human then
+            local espbillboard = newesp({character},Color3.fromRGB(255,50,190),character.Name,"players")
         end
     end
 end)
