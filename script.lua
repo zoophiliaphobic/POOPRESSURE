@@ -18,7 +18,7 @@ local fixgamesafezone = fixgamemiddleframe:WaitForChild("Circle")
 local pandemoniumgameframe = plr.PlayerGui.Main:WaitForChild("PandemoniumMiniGame")
 local pandegamecirle = pandemoniumgameframe:WaitForChild("Background"):WaitForChild("Frame"):WaitForChild("circle")
 
---made entirely with solara btw..
+-- made entirely with solara btw..
 -- im just that sigma
 
 local library = loadstring(game:HttpGet("https://raw.githubusercontent.com/zoophiliaphobic/psychic-octo-pancake/main/library.lua"))()
@@ -182,7 +182,6 @@ end
 for i,v in pairs(itemsfolder:WaitForChild("Battery"):GetChildren()) do
     table.insert(itemnames,v.Name)
 end
-
 
 local monsternames = {
     "A60",
@@ -452,7 +451,7 @@ function startremovesearchlights()
 
                 if eyesfolder then
                     table.insert(removedsearchlightseyes,{what=eyesfolder,ogparent=eyesfolder.Parent})
-                    v.Parent = nil
+                    eyesfolder.Parent = nil
                 end
             end
         end
@@ -857,7 +856,7 @@ rooms.ChildAdded:Connect(function(room)
                     if eyesfolder then
                         task.wait(1)
                         table.insert(removedsquiddleroots,{what=eyesfolder,ogparent=eyesfolder.Parent})
-                        v.Parent = nil
+                        eyesfolder.Parent = nil
                     end
                 end
             end
