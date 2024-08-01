@@ -27,7 +27,7 @@ local window = library.createwindow({title="welcome! press ` to close/open"})
 
 window.visibilitychanged = function(opened)
     if opened then
-        window.changetitle("poopressure gui (created by @zoophiliaphobic)")
+        window.changetitle("poopressure gui (created by @zoophiliaphobic) (dont ban me im just a casual)")
     end
 end
 
@@ -443,7 +443,7 @@ end
 function startremovehazards()
     for _,room in pairs(rooms:GetChildren()) do
         for i,v in pairs(room:GetDescendants()) do
-            if v.Name == "DamagePart" or v.Name == "BlockPart" or v.Name == "Invisible" or v.Name == "DamageParts" or (v.Name == "Electricity" and v:FindFirstChildOfClass("Sound")) then
+            if v.Name == "Yar" or v.Name == "DamagePart" or v.Name == "BlockPart" or v.Name == "Invisible" or v.Name == "DamageParts" or (v.Name == "Electricity" and v:FindFirstChildOfClass("Sound")) then
                 table.insert(removedhazards,{what=v,ogparent=v.Parent})
                 v.Parent = nil
             end
@@ -616,6 +616,10 @@ end
 
 local tab_hacks_toggle_godmode = tab_hacks.newtoggle({title="dont die to node monsters (unless its pandemonium) and if you enter a locker you have to disable and re-enable this",onclick=function(bool)
     enablegodmode(bool)
+end})
+
+local tab_hacks_toggle_safemode = tab_hacks.newtoggle({title="safe zone when entity spawns",onclick=function(bool)
+
 end})
 
 local tab_esp = window.createtab({title="visual"})
@@ -911,7 +915,7 @@ rooms.ChildAdded:Connect(function(room)
 
         if tab_hacks_toggle_nohazards.getvalue() then
             task.wait()
-            if v.Name == "DamagePart" or v.Name == "BlockPart" or v.Name == "Invisible" or v.Name == "DamageParts" or (v.Name == "Electricity" and v:FindFirstChildOfClass("Sound")) then
+            if v.Name == "Yar" or v.Name == "DamagePart" or v.Name == "BlockPart" or v.Name == "Invisible" or v.Name == "DamageParts" or (v.Name == "Electricity" and v:FindFirstChildOfClass("Sound")) then
                 task.defer(function()
                     table.insert(removedhazards,{what=v,ogparent=v.Parent})
                     v.Parent = nil
@@ -1006,6 +1010,8 @@ rooms.ChildAdded:Connect(function(room)
     end
 end)
 
+local lastpivot = nil 
+
 workspace.ChildAdded:Connect(function(entity)
     local realname = string.gsub(entity.Name,"Ridge","")
 
@@ -1034,6 +1040,29 @@ workspace.ChildAdded:Connect(function(entity)
             task.defer(function()
                 entity:Destroy()
             end)
+        else
+            if tab_hacks_toggle_safemode.getvalue() then
+                lastpivot = char:GetPivot()
+                task.wait()
+                local dotpplease = true
+                while entity:IsDescendantOf(workspace) do
+                    if (entity.Position-lastpivot.Position).Magnitude <= 100 then
+                        if not dotpplease then
+                            lastpivot = char:GetPivot()
+                        end
+
+                        dotpplease = true
+                        char:PivotTo(CFrame.new(Vector3.new(0,10000,0)))
+                    else  
+                        if dotpplease then
+                            dotpplease = false
+                            char:PivotTo(lastpivot)
+                        end
+                    end
+                    task.wait()
+                end
+                
+            end
         end
     end
 end)
